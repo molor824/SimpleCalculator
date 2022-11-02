@@ -1,0 +1,23 @@
+// precedence:
+// NUM, grouping, func call
+// -, !
+// **
+// *, /
+// +, -
+// <=, >=, <, >
+// ==, !=
+// ^
+// &&
+// ||
+
+expr -> or
+or -> and ('||' and)*
+and -> xor ('&&' xor)*
+xor -> eq ('^' eq)*
+eq -> comp ('!=' | '==' comp)*
+comp -> term ('<=' | '>=' | '<' | '>' term)*
+term -> factor ('+' | '-' factor)*
+factor -> pow ('*' | '/' pow)*
+pow -> unary ('**' unary)*
+unary -> ('-' | '!' unary) | primary
+primary -> NUM | '(' expr ')' | IDENT '(' expr ')' | 'true' | 'false' | 'PI'
