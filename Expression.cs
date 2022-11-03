@@ -163,26 +163,50 @@ public abstract class Expr
         }
         public override EvalValue? Eval() => new EvalValue.Number(Value);
     }
+    public class Constant : Expr
+    {
+        public Token.Ident Value;
+        public Constant(Token.Ident value) { Value = value; }
+
+        static readonly Dictionary<string, decimal> DecimalConstants = new() {
+            {"PI", 3.141592653589793238462643m},
+            {"e", 2.71828182845904523536m},
+            {"PHI", 1.61803398874989484820m}
+        };
+
+        public override string ToString()
+        {
+            return $"Constant: {Value.Value}";
+        }
+
+        public override EvalValue? Eval()
+        {
+            if (DecimalConstants.TryGetValue(Value.Value, out var evalV)) return new EvalValue.Number(evalV);
+
+            return null;
+        }
+    }
     public class Function : Expr
     {
-        static readonly Dictionary<string, Func<double, double>> NumFunc = new()
+        static readonly Dictionary<string, Func<decimal, decimal>> NumFunc = new()
         {
-            {"sqrt", Math.Sqrt},
-            {"sin", Math.Sin},
-            {"cos", Math.Cos},
-            {"sinh", Math.Sinh},
-            {"cosh", Math.Cosh},
-            {"tan", Math.Tan},
-            {"tanh", Math.Tanh},
-            {"asin", Math.Asin},
-            {"acos", Math.Acos},
-            {"asinh", Math.Asinh},
-            {"acosh", Math.Acosh},
+            {"sqrt", a => (decimal)Math.Sqrt((double)a)},
+            {"sin", a => (decimal)Math.Sin((double)a)},
+            {"cos", a => (decimal)Math.Cos((double)a)},
+            {"sinh", a => (decimal)Math.Sinh((double)a)},
+            {"cosh", a => (decimal)Math.Cosh((double)a)},
+            {"tan", a => (decimal)Math.Tan((double)a)},
+            {"tanh", a => (decimal)Math.Tanh((double)a)},
+            {"asin", a => (decimal)Math.Asin((double)a)},
+            {"acos", a => (decimal)Math.Acos((double)a)},
+            {"asinh", a => (decimal)Math.Asinh((double)a)},
+            {"acosh", a => (decimal)Math.Acosh((double)a)},
             {"floor", Math.Floor},
             {"round", Math.Round},
             {"ceil", Math.Ceiling},
-            {"cbrt", Math.Cbrt},
-            {"abs", Math.Abs}
+            {"cbrt", a => (decimal)Math.Cbrt((double)a)},
+            {"abs", Math.Abs},
+            {"sign", a => (decimal)Math.Sign(a)}
         };
         public Expr Child;
         public Token.Ident Name;
@@ -215,38 +239,13 @@ public abstract class Expr
             {
                 if (NumFunc.TryGetValue(Name.Value, out var func))
                 {
-                    number.Value = (decimal)func((double)number.Value);
+                    number.Value = func(number.Value);
                     return number;
                 }
             }
 
             return null;
         }
-    }
-    public class Group : Expr
-    {
-        public Expr Child;
-
-        public Group(Expr child)
-        {
-            Child = child;
-        }
-
-        public override string ToString()
-        {
-            var builder = new StringBuilder();
-            var strs = (Child.ToString() ?? "").Split('\n');
-
-            builder.Append($"Group:\n");
-
-            foreach (var str in strs)
-                builder.Append($"  {str}\n");
-
-            builder.Remove(builder.Length - 1, 1);
-
-            return builder.ToString();
-        }
-        public override EvalValue? Eval() => Child.Eval();
     }
     public class Error : Expr
     {

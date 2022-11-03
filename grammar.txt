@@ -20,4 +20,4 @@ term -> factor ('+' | '-' factor)*
 factor -> pow ('*' | '/' pow)*
 pow -> unary ('**' unary)*
 unary -> ('-' | '!' unary) | primary
-primary -> NUM | '(' expr ')' | IDENT '(' expr ')' | 'true' | 'false' | 'PI'
+primary -> NUM | '(' expr ')' | IDENT '(' expr ')' | 'true' | 'false' | '$' IDENT

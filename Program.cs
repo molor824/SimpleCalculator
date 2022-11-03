@@ -39,6 +39,12 @@ while (true)
 
     var expression = new Parser(tokens).Expression();
 
+    if (expression is Expr.Error)
+    {
+        Console.WriteLine("Syntax error.");
+        continue;
+    }
+
     if (debug) Console.WriteLine($"\nSyntax tree:\n{expression}");
 
     var eval = expression.Eval();

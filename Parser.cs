@@ -30,15 +30,25 @@ public class Parser
         return Current(out token);
     }
 
-    public Expr Expression() => Or();
+    public Expr Expression()
+    {
+        var or = Or();
+        if (or is Expr.Error err) return err;
+        return or;
+    }
     Expr Or()
     {
         var left = And();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "||" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, And());
+
+            var right = And();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -46,11 +56,16 @@ public class Parser
     Expr And()
     {
         var left = Xor();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "&&" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Xor());
+
+            var right = Xor();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -58,11 +73,16 @@ public class Parser
     Expr Xor()
     {
         var left = Equal();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "^" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Equal());
+
+            var right = Equal();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -70,11 +90,16 @@ public class Parser
     Expr Equal()
     {
         var left = Compare();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "!=" or "==" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Compare());
+
+            var right = Compare();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -82,11 +107,16 @@ public class Parser
     Expr Compare()
     {
         var left = Term();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "<" or ">" or "<=" or ">=" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Term());
+
+            var right = Term();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -94,11 +124,16 @@ public class Parser
     Expr Term()
     {
         var left = Factor();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "+" or "-" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Factor());
+
+            var right = Factor();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -106,11 +141,16 @@ public class Parser
     Expr Factor()
     {
         var left = Pow();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "*" or "/" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Pow());
+
+            var right = Pow();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -118,11 +158,16 @@ public class Parser
     Expr Pow()
     {
         var left = Unary();
+        if (left is Expr.Error err) return err;
 
         while (Peek(out var token) && token is Token.Symbol { Value: "**" } symbol)
         {
             _index++;
-            left = new Expr.Binary(left, symbol, Unary());
+
+            var right = Unary();
+            if (right is Expr.Error err1) return err1;
+
+            left = new Expr.Binary(left, symbol, right);
         }
 
         return left;
@@ -134,10 +179,17 @@ public class Parser
             if (token is Token.Symbol { Value: "-" or "!" } symbol)
             {
                 _index++;
-                return new Expr.Unary(symbol, Unary());
+
+                var child = Unary();
+                if (child is Expr.Error err) return err;
+
+                return new Expr.Unary(symbol, child);
             }
 
-            return Primary();
+            var primary = Primary();
+            if (primary is Expr.Error err1) return err1;
+
+            return primary;
         }
 
         return new Expr.Error();
@@ -148,11 +200,14 @@ public class Parser
         {
             if (token is Token.Ident { Value: "true" or "false" } boolLit)
                 return new Expr.Boolean(boolLit.Value == "true");
-            if (token is Token.Ident { Value: "PI" })
-                return new Expr.Number((decimal)Math.PI);
-            if (token is Token.Number num)
+            else if (token is Token.Number num)
                 return new Expr.Number(num.Value);
-            if (token is Token.Ident ident)
+            else if (token is Token.Symbol { Value: "$" })
+            {
+                if (Advance(out token) && token is Token.Ident constant)
+                    return new Expr.Constant(constant);
+            }
+            else if (token is Token.Ident ident)
             {
                 if (Advance(out token) && token is Token.Symbol { Value: "(" })
                 {
@@ -162,12 +217,12 @@ public class Parser
                         return new Expr.Function(ident, expr);
                 }
             }
-            if (token is Token.Symbol { Value: "(" })
+            else if (token is Token.Symbol { Value: "(" })
             {
                 var expr = Expression();
 
                 if (Advance(out token) && token is Token.Symbol { Value: ")" })
-                    return new Expr.Group(expr);
+                    return expr;
             }
         }
 

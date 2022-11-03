@@ -7,7 +7,7 @@ public class Lexer
         "!=", "==", "<<", ">>", "<=", ">=", "<", ">", // comparison
         "&&", "||", "^", "!", // logical
         "&", "|", "~", // bitwise logical
-        "(", ")" // other
+        "(", ")", "$" // other
     };
 
     string _source;
